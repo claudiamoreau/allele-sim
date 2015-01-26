@@ -25,14 +25,12 @@ def loadfile(datafile):
     ind_dict = dict(zip(alldata[:,0], indices))
     father_dict = dict(zip(alldata[:,1], indices))
     mother_dict = dict(zip(alldata[:,2], indices))
-    
     build_offspr_dict = defaultdict(list)
     
     for i, ind in enumerate(mothers):
         build_offspr_dict[ind].append(inds[i])
     for i, ind in enumerate(fathers):
         build_offspr_dict[ind].append(inds[i])
-    
     offspr_dict = dict(build_offspr_dict)
     
     datalist = []
@@ -47,6 +45,27 @@ def writefile(output, outfile):
         writer.writerow(output)
 
 
+def createfile(outfile, newfile = True):
+    file_suffix = 1
+    if os.path.isfile(outfile) is True and newfile is True:
+        file, ext = os.path.splitext(outfile)
+        while os.path.isfile(outfile) is True:
+            file_suffix += 1
+            outfile = file + '_' + str(file_suffix) + ext
+            
+        print "Warning: output file already exists. \
+                                Outputting to new file", outfile
+    
+    if os.path.isfile(outfile) is True and newfile is False:
+        pass
+    else:
+        ## Write proband labels as first line in output file. Only necessary when
+        ## writing a new file.
+        writefile(probands, outfile)
+    
+    return outfile
+
+    
 ## Currently not used
 def appendcolumntofile(output, outfile):
     towrite = []
@@ -194,18 +213,26 @@ def passalleles(indlist, ind_dict, fatherlist, motherlist, path):
 ##----------------------------------------------------------------------------
 ## Things you need to think about
 ##----------------------------------------------------------------------------        
-## Specify files for input and output
-datafile = "/Users/dominic/project/GENLIB/data/pedEx.txt"
-outfile = '/Users/dominic/project/GENLIB/results/output.txt'
+## Specify paths and data file
+datafile = '/Users/dominic/project/GENLIB/data/examples/pedEx2.txt'
+outpath = '/Users/dominic/project/GENLIB/results/'
+
 ## Number of iterations
 Iterations = 10
-## Whether you want to append an existing output file or create a new one
+
+## Whether you want to append an existing output file or create a new one,
+## if the output file you provide already exists. New files created in thie
+## way will have numbered suffixes
 MakeNewFile = True
 
 
 ##----------------------------------------------------------------------------
 ## Things that happen automatically
 ##---------------------------------------------------------------------------- 
+##
+datafile_name, datafile_ext = os.path.splitext(os.path.basename(datafile))
+outfile = outpath + datafile_name + "_out.txt"
+
 ## Prepares data for analysis
 datalist = loadfile(datafile)
 inds = datalist[0]
@@ -220,22 +247,8 @@ offspring_dict = datalist[6]
 probands = getprobands(inds, mother_dict, father_dict)
 proband_indices = [ind_dict[ind] for ind in probands]
 
-## Check if output file already exists
-file_suffix = 1
-if os.path.isfile(outfile) is True and MakeNewFile is True:
-    file, ext = os.path.splitext(outfile)
-    while os.path.isfile(outfile) is True:
-        file_suffix += 1
-        outfile = file + str(file_suffix) + ext
-        
-    print "Warning: output file already exists. \
-                            Outputting to new file", outfile
-
-    ## Write proband labels as first line in output file. Only necessary when
-    ## writing a new file.
-    writefile(probands, outfile)
-elif os.path.isfile(outfile) is False and MakeNewFile is True:
-    writefile(probands, outfile)
+## Check if output file already exists and create a new file if necessary.
+newoutfile = createfile(outfile, MakeNewFile)
         
 ## Finds path to take through the pedigree
 print "Finding path through pedigree..."
@@ -254,8 +267,8 @@ for i in range(Iterations):
     proband_allele1 = [results[1][i] for i in proband_indices]
     
     ## Writes output
-    writefile(proband_allele0, outfile)
-    writefile(proband_allele1, outfile)
+    writefile(proband_allele0, newoutfile)
+    writefile(proband_allele1, newoutfile)
 
 
 
